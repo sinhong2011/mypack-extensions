@@ -1,0 +1,51 @@
+name: publish
+
+# After a merge to main, the Hub list on the "hub" branch is rebuilt: each
+# extension pinned to its file at the merged commit, with its SHA-256.
+# MyPack reads https://raw.githubusercontent.com/<repo>/hub/index.json.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/check.mjs
+      - run: |
+          files=$(ls extensions/*/*.test.js 2>/dev/null || true)
+          if [ -n "$files" ]; then node --test $files; fi
+      - name: Build index.json
+        run: node tools/build-index.mjs --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" > "$RUNNER_TEMP/index.json"
+      - name: Publish to the hub branch
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin hub >/dev/null; then
+            git fetch --depth 1 origin hub
+            git switch -C hub FETCH_HEAD
+          else
+            git switch --orphan hub
+            git rm -rf --quiet . || true
+          fi
+          git clean -fdq
+          cp "$RUNNER_TEMP/index.json" index.json
+          printf '%s\n' "The MyPack Hub list, built from main by .github/workflows/publish.yml. Do not edit." > README.md
+          git add index.json README.md
+          if git diff --cached --quiet; then echo "index unchanged"; exit 0; fi
+          git commit -q -m "hub: index for ${GITHUB_SHA::12}"
+          git push origin hub

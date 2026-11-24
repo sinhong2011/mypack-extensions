@@ -1,0 +1,33 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Headers, permissions and versions
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node tools/check.mjs --base "origin/${{ github.base_ref }}"
+          else
+            node tools/check.mjs
+          fi
+      - name: Tests
+        run: |
+          files=$(ls extensions/*/*.test.js 2>/dev/null || true)
+          if [ -n "$files" ]; then node --test $files; else echo "no tests"; fi
+      - name: The Hub list builds
+        run: node tools/build-index.mjs --repo "${{ github.repository }}" --commit "${{ github.sha }}" > /dev/null
