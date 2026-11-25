@@ -9,8 +9,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# The hub branch accepts pushes only from the HUB_DEPLOY_KEY deploy key
+# (a ruleset; GitHub Actions itself cannot bypass one on a personal
+# account's repository), so the job's own token only reads.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: publish
@@ -21,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.HUB_DEPLOY_KEY }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
