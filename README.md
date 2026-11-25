@@ -1,7 +1,7 @@
 # MyPack Extensions
 
 The extensions in [MyPack](https://github.com/sinhong2011/mypack)'s Hub. They are userscripts in the Greasemonkey
-format: MyPack apps (runtime 1.0.11 or later) run them, and so do Violentmonkey, Tampermonkey and ScriptCat.
+format: MyPack apps (runtime 1.0.12 or later) run them, and so do Violentmonkey, Tampermonkey and ScriptCat.
 
 | Extension | Sites | What it does |
 | --- | --- | --- |
